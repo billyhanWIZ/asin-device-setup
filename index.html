@@ -354,6 +354,13 @@
         // 장치 검색
         async function scanDevice() {
             try {
+                // Web Bluetooth 지원 확인
+                if (!navigator.bluetooth) {
+                    updateStatus('이 브라우저는 Web Bluetooth를 지원하지 않습니다', 'error');
+                    alert('Web Bluetooth를 지원하지 않습니다.\n\n해결 방법:\n1. Chrome 주소창에 chrome://flags 입력\n2. "Web Bluetooth" 검색\n3. Enabled로 변경\n4. Chrome 재시작');
+                    return;
+                }
+                
                 updateStatus('장치를 검색 중입니다...', 'info');
                 
                 // Web Bluetooth API로 장치 검색 (ASIN CNT 전용 UUID 사용)
