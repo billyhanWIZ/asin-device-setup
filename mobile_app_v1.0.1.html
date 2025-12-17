@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASIN CNT 장치 설정 앱</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .version {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .status.warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button.primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        button.primary:hover {
+            background: #5568d3;
+        }
+        
+        button.success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        button.success:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .device-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .device-info div {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .device-info strong {
+            color: #333;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .checkbox-group {
+            margin: 15px 0;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        
+        .section {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .log {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        
+        .log div {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 ASIN CNT 장치 설정</h1>
+        <div class="version">v1.0.1 (30분 타임아웃)</div>
+        
+        <!-- 상태 메시지 -->
+        <div id="status" class="status info">
+            앱을 시작하려면 '장치 검색' 버튼을 눌러주세요
+        </div>
+        
+        <!-- 1. 장치 검색 -->
+        <div id="section-scan" class="section active">
+            <button class="primary" onclick="scanDevice()">📡 장치 검색</button>
+        </div>
+        
+        <!-- 2. 장치 정보 -->
+        <div id="section-info" class="section">
+            <div class="device-info">
+                <div><strong>장치 ID:</strong> <span id="deviceId">-</span></div>
+                <div><strong>MAC 주소:</strong> <span id="deviceMac">-</span></div>
+                <div><strong>펌웨어 버전:</strong> <span id="firmwareVersion">-</span></div>
+                <div><strong>설정 상태:</strong> <span id="configStatus">-</span></div>
+            </div>
+            
+            <button class="primary" onclick="showConfigSection()">⚙️ 장치 설정하기</button>
+            <button onclick="testSensor()">🔍 센서 테스트</button>
+        </div>
+        
+        <!-- 3. 장치 설정 -->
+        <div id="section-config" class="section">
+            <label>장치 유형</label>
+            <select id="deviceType" onchange="toggleConfigFields()">
+                <option value="">선택하세요</option>
+                <option value="sensor_node">센서 노드</option>
+                <option value="gateway_wifi">게이트웨이 (WiFi)</option>
+                <option value="gateway_lte">게이트웨이 (LTE)</option>
+            </select>
+            
+            <!-- 센서 노드 설정 -->
+            <div id="sensor-config" style="display:none;">
+                <label>측정 센서 선택</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="incline" value="incline">
+                        <label for="incline">경사계</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="crack" value="crack">
+                        <label for="crack">균열계</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="frequency" value="frequency">
+                        <label for="frequency">고유진동수</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="ultra" value="ultra">
+                        <label for="ultra">초음파</label>
+                    </div>
+                </div>
+                
+                <label>게이트웨이 ID</label>
+                <input type="text" id="gatewayId" placeholder="예: GW001">
+                
+                <label>노드 ID</label>
+                <input type="text" id="nodeId" placeholder="예: NODE001">
+                
+                <label>LoRa 채널</label>
+                <input type="number" id="loraChannel" value="868">
+            </div>
+            
+            <!-- 게이트웨이 설정 -->
+            <div id="gateway-config" style="display:none;">
+                <label>WiFi SSID</label>
+                <input type="text" id="wifiSSID" placeholder="WiFi 이름">
+                
+                <label>WiFi 비밀번호</label>
+                <input type="password" id="wifiPassword" placeholder="WiFi 비밀번호">
+                
+                <label>API 주소</label>
+                <input type="text" id="apiEndpoint" placeholder="https://api.asincnt.com/v1/sensor">
+                
+                <label>API Key</label>
+                <input type="text" id="apiKey" placeholder="API 키">
+            </div>
+            
+            <button class="success" onclick="saveConfig()">💾 설정 저장</button>
+            <button onclick="showInfoSection()">← 뒤로</button>
+        </div>
+        
+        <!-- 4. 펌웨어 업데이트 -->
+        <div id="section-ota" class="section">
+            <div class="progress">
+                <div id="progressBar" class="progress-bar" style="width: 0%">0%</div>
+            </div>
+            
+            <div id="otaStatus"></div>
+            
+            <button id="otaBtn" class="success" onclick="startOTA()">🚀 펌웨어 업데이트</button>
+        </div>
+        
+        <!-- 로그 -->
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        // ASIN CNT 전용 블루투스 UUID
+        const BLE_SERVICE_UUID = 'a51ac4f0-8d1c-4e5b-9f3a-2b7e6c8d1a9e';
+        const BLE_CHARACTERISTIC_UUID = 'a51ac4f1-8d1c-4e5b-9f3a-2b7e6c8d1a9e';
+        
+        let device = null;
+        let characteristic = null;
+        let deviceInfo = {};
+        
+        // 로그 출력
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const div = document.createElement('div');
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // 상태 업데이트
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            addLog(message);
+        }
+        
+        // 섹션 전환
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+        }
+        
+        function showInfoSection() {
+            showSection('section-info');
+        }
+        
+        function showConfigSection() {
+            showSection('section-config');
+        }
+        
+        // 장치 검색
+        async function scanDevice() {
+            try {
+                updateStatus('장치를 검색 중입니다...', 'info');
+                
+                // Web Bluetooth API로 장치 검색 (ASIN CNT 전용 UUID 사용)
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'ASIN_' }],
+                    optionalServices: [BLE_SERVICE_UUID]
+                });
+                
+                addLog(`장치 발견: ${device.name}`);
+                updateStatus('장치에 연결 중...', 'info');
+                
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+                characteristic = await service.getCharacteristic(BLE_CHARACTERISTIC_UUID);
+                
+                // 알림 활성화
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleNotification);
+                
+                updateStatus('장치 연결 완료!', 'success');
+                
+                // 장치 정보 가져오기
+                await getDeviceInfo();
+                
+                showSection('section-info');
+                
+            } catch (error) {
+                updateStatus('장치 연결 실패: ' + error.message, 'error');
+                addLog('Error: ' + error);
+            }
+        }
+        
+        // 장치 정보 가져오기
+        async function getDeviceInfo() {
+            await sendCommand({ cmd: 'GET_INFO' });
+        }
+        
+        // 명령어 전송
+        async function sendCommand(cmd) {
+            const json = JSON.stringify(cmd);
+            const encoder = new TextEncoder();
+            const data = encoder.encode(json + '\n');
+            
+            await characteristic.writeValue(data);
+            addLog(`전송: ${json}`);
+        }
+        
+        // 응답 처리
+        function handleNotification(event) {
+            const decoder = new TextDecoder();
+            const value = decoder.decode(event.target.value);
+            addLog(`수신: ${value}`);
+            
+            try {
+                const data = JSON.parse(value);
+                
+                if (data.deviceID) {
+                    // 장치 정보 업데이트
+                    deviceInfo = data;
+                    document.getElementById('deviceId').textContent = data.deviceID || '-';
+                    document.getElementById('deviceMac').textContent = data.mac || '-';
+                    document.getElementById('firmwareVersion').textContent = data.firmwareVersion || '-';
+                    document.getElementById('configStatus').textContent = data.configured ? '설정 완료' : '미설정';
+                }
+                
+                if (data.status === 'OK' && data.test === 'SENSOR') {
+                    // 센서 테스트 결과
+                    let result = '센서 테스트 결과:\n';
+                    result += `배터리: ${data.batteryOK ? '✓' : '✗'} (${data.battery})\n`;
+                    result += `LED: ${data.ledOK ? '✓' : '✗'}\n`;
+                    result += `Bluetooth: ${data.bluetoothOK ? '✓' : '✗'}`;
+                    alert(result);
+                }
+                
+                if (data.status === 'OTA_SUCCESS') {
+                    updateStatus('펌웨어 업데이트 완료!', 'success');
+                }
+                
+            } catch (e) {
+                // JSON 파싱 실패 시 무시
+            }
+        }
+        
+        // 설정 필드 토글
+        function toggleConfigFields() {
+            const deviceType = document.getElementById('deviceType').value;
+            const sensorConfig = document.getElementById('sensor-config');
+            const gatewayConfig = document.getElementById('gateway-config');
+            
+            if (deviceType === 'sensor_node') {
+                sensorConfig.style.display = 'block';
+                gatewayConfig.style.display = 'none';
+            } else if (deviceType.startsWith('gateway')) {
+                sensorConfig.style.display = 'none';
+                gatewayConfig.style.display = 'block';
+            } else {
+                sensorConfig.style.display = 'none';
+                gatewayConfig.style.display = 'none';
+            }
+        }
+        
+        // 설정 저장
+        async function saveConfig() {
+            const deviceType = document.getElementById('deviceType').value;
+            
+            if (!deviceType) {
+                alert('장치 유형을 선택하세요');
+                return;
+            }
+            
+            const config = {
+                cmd: 'SET_CONFIG',
+                deviceType: deviceType
+            };
+            
+            if (deviceType === 'sensor_node') {
+                // 센서 타입
+                const sensorTypes = [];
+                if (document.getElementById('incline').checked) sensorTypes.push('incline');
+                if (document.getElementById('crack').checked) sensorTypes.push('crack');
+                if (document.getElementById('frequency').checked) sensorTypes.push('frequency');
+                if (document.getElementById('ultra').checked) sensorTypes.push('ultra');
+                
+                config.sensorTypes = sensorTypes;
+                config.gatewayId = document.getElementById('gatewayId').value;
+                config.nodeId = document.getElementById('nodeId').value;
+                config.loraChannel = parseInt(document.getElementById('loraChannel').value);
+                
+            } else {
+                // 게이트웨이
+                config.wifiSSID = document.getElementById('wifiSSID').value;
+                config.wifiPassword = document.getElementById('wifiPassword').value;
+                config.apiEndpoint = document.getElementById('apiEndpoint').value;
+                config.apiKey = document.getElementById('apiKey').value;
+            }
+            
+            await sendCommand(config);
+            updateStatus('설정이 저장되었습니다', 'success');
+            
+            // OTA 섹션으로 이동
+            setTimeout(() => {
+                showSection('section-ota');
+            }, 1500);
+        }
+        
+        // 센서 테스트
+        async function testSensor() {
+            updateStatus('센서를 테스트 중입니다...', 'info');
+            await sendCommand({ cmd: 'TEST_SENSOR' });
+        }
+        
+        // OTA 업데이트
+        async function startOTA() {
+            const deviceType = document.getElementById('deviceType').value;
+            
+            if (!deviceType) {
+                alert('먼저 장치를 설정하세요');
+                return;
+            }
+            
+            // 펌웨어 URL 매핑 (실제 서버 주소로 변경 필요)
+            const firmwareMap = {
+                'sensor_node': 'http://your-server.com/firmware/sensor_node.bin',
+                'gateway_wifi': 'http://your-server.com/firmware/gateway_wifi.bin',
+                'gateway_lte': 'http://your-server.com/firmware/gateway_lte.bin'
+            };
+            
+            const firmwareURL = firmwareMap[deviceType];
+            
+            if (!firmwareURL) {
+                alert('펌웨어 URL이 설정되지 않았습니다');
+                return;
+            }
+            
+            updateStatus('펌웨어를 다운로드 중입니다...', 'info');
+            
+            const otaCmd = {
+                cmd: 'START_OTA',
+                firmwareURL: firmwareURL,
+                wifiSSID: document.getElementById('wifiSSID').value,
+                wifiPassword: document.getElementById('wifiPassword').value
+            };
+            
+            await sendCommand(otaCmd);
+            
+            // 진행률 애니메이션 (실제로는 펌웨어에서 진행률을 전송해야 함)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                if (progress > 100) progress = 100;
+                
+                document.getElementById('progressBar').style.width = progress + '%';
+                document.getElementById('progressBar').textContent = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                }
+            }, 500);
+        }
+    </script>
+</body>
+</html>
